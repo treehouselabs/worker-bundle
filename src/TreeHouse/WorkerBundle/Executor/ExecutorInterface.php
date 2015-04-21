@@ -21,9 +21,4 @@ interface ExecutorInterface
      * @return mixed
      */
     public function execute(array $payload);
-
-    /**
-     * @return string
-     */
-    public function __toString();
 }

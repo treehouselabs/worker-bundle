@@ -2,8 +2,6 @@
 
 namespace TreeHouse\WorkerBundle\Command;
 
-use Leezy\PheanstalkBundle\Event\CommandEvent;
-use Leezy\PheanstalkBundle\Proxy\PheanstalkProxy;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -54,27 +52,17 @@ class ClearCommand extends Command
 
         $states = $input->getOption('state');
 
-        /** @var PheanstalkProxy $pheanstalk */
         $pheanstalk = $this->manager->getPheanstalk();
-        $dispatcher = $pheanstalk->getDispatcher();
 
         foreach ($actions as $action) {
             $stats = $pheanstalk->statsTube($action);
             $progressbar = new ProgressBar($output, $stats['']);
-
-            $callback = function () use ($progressbar) {
-                $progressbar->advance();
-            };
-
-            $dispatcher->addListener(CommandEvent::DELETE, $callback);
 
             $output->writeln(
                 sprintf('Clearing <info>%s</info> jobs with <info>%s</info> status', $action, json_encode($states))
             );
 
             $this->manager->clear($action, $states);
-
-            $dispatcher->removeListener(CommandEvent::DELETE, $callback);
 
             $progressbar->finish();
         }
