@@ -1,0 +1,30 @@
+{
+  "name": "treehouselabs/worker-bundle",
+  "type": "symfony-bundle",
+  "description": "Adds worker functionality to a Symfony2 project, using Beanstalkd as the message queue",
+  "keywords": ["worker", "beanstalk", "beanstalkd"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Peter Kruithof",
+      "email": "peter@treehouse.nl"
+    },
+    {
+      "name": "Jeroen Fiege",
+      "email": "jeroen@treehouse.nl"
+    }
+  ],
+  "require": {
+    "php": ">=5.5",
+    "symfony/symfony": "~2.6",
+    "leezy/pheanstalk-bundle": "dev-master as 3.0"
+  },
+  "require-dev": {
+    "doctrine/orm": "~2.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "TreeHouse\\WorkerBundle\\": "src/TreeHouse/WorkerBundle/"
+    }
+  }
+}

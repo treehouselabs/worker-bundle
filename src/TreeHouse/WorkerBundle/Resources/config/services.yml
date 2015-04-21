@@ -1,0 +1,12 @@
+parameters:
+  tree_house.worker.queue_manager.class: TreeHouse\WorkerBundle\QueueManager
+
+services:
+  tree_house.worker.queue_manager:
+    class: %tree_house.worker.queue_manager.class%
+    arguments:
+      - ~ # injected in extension
+      - @event_dispatcher
+      - @logger
+    tags:
+      - { name: monolog.logger, channel: worker }

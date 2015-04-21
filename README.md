@@ -1,0 +1,4 @@
+FMWorkerBundle
+==============
+
+To be documented.
