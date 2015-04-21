@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use TreeHouse\WorkerBundle\QueueManager;
 use TreeHouse\WorkerBundle\WorkerEvents;
 
-class JobExecuteCommand extends Command
+class ExecuteCommand extends Command
 {
     /**
      * @var QueueManager

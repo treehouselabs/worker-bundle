@@ -23,6 +23,6 @@ class TreeHouseWorkerExtension extends Extension
 
         $pheanstalk = $config['pheanstalk'];
         $definition = $container->getDefinition('tree_house.worker.queue_manager');
-        $definition->replaceArgument(1, new Reference('leezy.pheanstalk.' . $pheanstalk));
+        $definition->replaceArgument(0, new Reference('leezy.pheanstalk.' . $pheanstalk));
     }
 }
