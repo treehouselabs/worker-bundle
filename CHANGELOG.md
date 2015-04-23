@@ -3,11 +3,13 @@ CHANGELOG
 
 ## 1.0.0
 
-BC breaks:
+BC breaks from the previous [WorkerBundle][worker-bundle]:
+
+[worker-bundle]: https://github.com/treehouselabs/FMWorkerBundle/
 
 * Renamed the `FM` namespace to `TreeHouse`
 * Removed `QueueManager::setExceptionHandler` and `QueueManager::getExceptionHandler`.
-* The $time argument in `RescheduleException::create` no longer needs the `+`
+* The `$time` argument in `RescheduleException::create` no longer needs the `+`
   sign.
 * Actions and executors are now combined in a dictionary. The action methods
   (`registerAction()`, `hasAction()` and `getActions()`) have therefore been
@@ -47,5 +49,7 @@ BC breaks:
 Changes:
 
 * Added ExecutorInterface
+* Added configurable payloads
+* Added convenience commands
 * Listeners to the 'pre-execute' event may change the payload.
 * Listeners to the 'post-execute' event may change the result.

@@ -6,6 +6,10 @@ Beanstalkd[beanstalkd] as the message queue.
 
 [beanstalkd]: http://kr.github.io/beanstalkd/
 
+[![Build Status](https://travis-ci.org/treehouselabs/TreeHouseWorkerBundle.svg)](https://travis-ci.org/treehouselabs/TreeHouseWorkerBundle)
+[![Code Coverage](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/badges/coverage.png)](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/badges/quality-score.png)](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/)
+
 ## Installation
 
 For this process, we assume you have a Beanstalk server up and running.
