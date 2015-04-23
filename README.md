@@ -2,7 +2,7 @@ worker-bundle
 =============
 
 A Symfony2 bundle that adds worker functionality to your project, using
-Beanstalkd[beanstalkd] as the message queue.
+[Beanstalkd][beanstalkd] as the message queue.
 
 [beanstalkd]: http://kr.github.io/beanstalkd/
 

@@ -33,7 +33,7 @@ class Executor implements ExecutorInterface
 }
 ```
 
-[executor]: src/TreeHouse/WorkerBundle/Executor/ExecutorInterface.php
+[executor]: /src/TreeHouse/WorkerBundle/Executor/ExecutorInterface.php
 
 These executors need to be registered in the QueueManager. This is required
 when adding a job or requesting one! When you create a service for this
@@ -82,7 +82,7 @@ class Executor implements ExecutorInterface
 ### Names or numbers for option keys?
 
 Normally it is advised to use names for the options, instead of digits. However
-since the [`ScheduleCommand`][schedule] and `ExecuteCommand`[execute] are not
+since the [`ScheduleCommand`][schedule] and [`ExecuteCommand`][execute] are not
 equipped to input associative arrays we generally recommend against it. If
 you're not using these commands, or using a workaround for this, you can use
 names for your options.

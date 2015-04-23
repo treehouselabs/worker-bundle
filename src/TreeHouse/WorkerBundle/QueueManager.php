@@ -174,7 +174,8 @@ class QueueManager
      * @param string     $action   The action
      * @param array      $payload  The job's payload
      * @param string|int $delay    The delay after which the job can be reserved.
-     *                             Can be a number of seconds, or a string which strtotime accepts
+     *                             Can be a number of seconds, or a date-diff
+     *                             string relative from now, like "10 seconds".
      * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
      * @param int        $ttr      Time To Run: seconds a job can be reserved for
      *
@@ -205,7 +206,7 @@ class QueueManager
         }
 
         if (!is_numeric($delay)) {
-            $delay = strtotime($delay) - time();
+            $delay = strtotime(sprintf('+ %s', $delay)) - time();
         }
 
         if ($delay < 0) {
@@ -244,7 +245,8 @@ class QueueManager
      * @param string     $action   The action
      * @param object     $object   The object to add a job for
      * @param string|int $delay    The delay after which the job can be reserved.
-     *                             Can be a number of seconds, or a string which strtotime accepts
+     *                             Can be a number of seconds, or a date-diff
+     *                             string relative from now, like "10 seconds".
      * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
      * @param int        $ttr      Time To Run: seconds a job can be reserved for
      *

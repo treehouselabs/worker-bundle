@@ -100,7 +100,7 @@ control over when the job will be reserved to a worker.
 You can set a specific time after which the job can be reserved:
 
 ```php
-$queueManager->addForObject('user.mail.registration', $user, '+10 minutes');
+$queueManager->addForObject('user.mail.registration', $user, '10 minutes');
 ```
 
 This delays the job for 10 minutes after now.
@@ -122,7 +122,7 @@ Combining these arguments, you can influence even more control here:
 
 ```php
 # urgent, but only after 1 minute
-$queueManager->addForObject('user.mail.registration', $user, '+1 minute', 10);
+$queueManager->addForObject('user.mail.registration', $user, '1 minute', 10);
 ```
 
 Note how we're saying _influence_ here. Depending on the number of jobs in the

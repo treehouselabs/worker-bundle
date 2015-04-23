@@ -213,7 +213,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $action   = $executor->getName();
         $this->manager->addExecutor($executor);
 
-        $this->manager->add($action, [], '-1 minute');
+        $this->manager->add($action, [], -60);
     }
 
     public function testAddWithStringDelay()
@@ -233,7 +233,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(1234))
         ;
 
-        $this->assertEquals(1234, $this->manager->add($action, $payload, '+1 minute', $priority, $ttr));
+        $this->assertEquals(1234, $this->manager->add($action, $payload, '1 minute', $priority, $ttr));
     }
 
     /**
