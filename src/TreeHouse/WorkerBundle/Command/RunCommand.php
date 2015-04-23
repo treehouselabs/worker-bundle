@@ -2,11 +2,11 @@
 
 namespace TreeHouse\WorkerBundle\Command;
 
-use Pheanstalk\Job;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use TreeHouse\WorkerBundle\Exception\AbortException;
 use TreeHouse\WorkerBundle\QueueManager;
 use TreeHouse\WorkerBundle\WorkerEvents;
 
@@ -40,8 +40,8 @@ class RunCommand extends Command
         $this
             ->setName('worker:run')
             ->setDescription('Starts a worker')
-            ->addOption('action', 'a', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Limit worker to only run specific actions')
-            ->addOption('filter', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Prevent worker from running specific actions', ['default'])
+            ->addOption('action', 'a', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Selects actions to run, defaults to all')
+            ->addOption('exclude', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Excludes actions to run')
             ->addOption('limit', 'l', InputOption::VALUE_OPTIONAL, 'Maximum number of jobs to execute', 20)
             ->addOption('max-memory', 'm', InputOption::VALUE_OPTIONAL, 'Maximum amount of memory to use (in MB). The worker will try to stop before this limit is reached. Set to 0 for infinite.', 0)
             ->addOption('max-time', 't', InputOption::VALUE_OPTIONAL, 'Maximum running time in seconds. Set to 0 for infinite', 0)
@@ -64,47 +64,64 @@ class RunCommand extends Command
         $batchSize = intval($input->getOption('batch-size'));
 
         // configure pheanstalk to watch the right tubes
-        $this->registerActions($input->getOption('action'), $input->getOption('filter'));
-
-        $this->output('Waiting for reserved job...');
+        $this->watchActions($input->getOption('action'), $input->getOption('exclude'));
 
         $start         = time();
         $minDuration   = 15;
         $jobsCompleted = 0;
 
         // wait for job, timeout after 1 minute
-        while ($job = $this->manager->get(60)) {
+        $timeout = 60;
+        $this->output(sprintf('Waiting at most <info>%d seconds</info> for a reserved job...', $timeout));
+
+        $exit = 0;
+        while ($job = $this->manager->get($timeout)) {
             $stats = $this->manager->getJobStats($job);
 
-            $this->log($job, sprintf('Working <info>%s</info> with payload <info>%s</info>', $stats['tube'], $job->getData()));
+            $timeStart = microtime(true) * 1000;
+            $memStart = memory_get_usage(true);
 
             try {
-                $start    = microtime(true) * 1000;
-                $result   = $this->manager->executeJob($job);
-                $duration = (microtime(true) * 1000) - $start;
-
-                // job completed without exception, file and delete it
-                $this->log(
-                    $job,
-                    sprintf('Completed job in <comment>%dms</comment> with result: <info>%s</info>', $duration, json_encode($result))
+                $this->output(
+                    sprintf(
+                        'Working job <info>%d</info> for action <comment>%s</comment> with payload <info>%s</info>',
+                        $job->getId(),
+                        $stats['tube'],
+                        $job->getData()
+                    )
                 );
-            } catch (\Exception $e) {
-                // something went wrong that even the queue manager didn't
-                // catch, or maybe it has caused it itself.
-                $this->log($job, sprintf('<error>%s</error>', $e->getMessage()));
-                $this->manager->bury($job);
+
+                $result = $this->manager->executeJob($job);
+            } catch (AbortException $e) {
+                $message = 'Worker aborted ' . ($e->getReason() ? ('with reason: ' . $e->getReason()) : 'without a given reason');
+                $this->output($message);
+
+                $exit = 1;
+
+                break;
             }
+
+            $duration = microtime(true) * 1000 - $timeStart;
+            $usage    = memory_get_usage(true) - $memStart;
+            $message = sprintf(
+                'Completed job <info>%d</info> in <comment>%dms</comment> using <comment>%s</comment> with result: <info>%s</info>',
+                $job->getId(),
+                $duration,
+                $this->formatBytes($usage),
+                json_encode($result, JSON_UNESCAPED_SLASHES)
+            );
+            $this->output($message);
 
             ++$jobsCompleted;
 
             // intermediate flush
             if ($jobsCompleted % $batchSize === 0) {
-                $this->output('Batch complete');
+                $this->output('Batch complete', OutputInterface::VERBOSITY_VERBOSE);
                 $dispatcher->dispatch(WorkerEvents::FLUSH);
             }
 
             if ($jobsCompleted >= $maxJobs) {
-                $this->output('Maximum number of jobs completed');
+                $this->output(sprintf('Maximum number of jobs completed (%d)', $maxJobs), OutputInterface::VERBOSITY_VERBOSE);
 
                 break;
             }
@@ -128,6 +145,7 @@ class RunCommand extends Command
             }
         }
 
+        // flush remaining
         $dispatcher->dispatch(WorkerEvents::FLUSH);
 
         // make sure worker doesn't quit to quickly, or supervisor will mark it
@@ -138,40 +156,67 @@ class RunCommand extends Command
             sleep($minDuration - $duration);
         }
 
-        $dispatcher->dispatch(WorkerEvents::RUN_TERMINATE);
-
         $this->output('Shutting down worker');
+
+        return $exit;
     }
 
     /**
-     * @param array $actions
-     * @param array $filters
+     * @param string[] $include
+     * @param string[] $exclude
      */
-    protected function registerActions(array $actions = [], array $filters = [])
+    protected function watchActions(array $include = [], array $exclude = [])
     {
-        foreach ($actions as $action) {
-            $this->manager->getPheanstalk()->watch($action);
+        $actions = array_keys($this->manager->getExecutors());
+
+        if (empty($include)) {
+            $include = $actions;
         }
 
-        foreach ($filters as $action) {
-            $this->manager->getPheanstalk()->ignore($action);
+        if (!empty($diff = array_diff($include, $actions))) {
+            throw new \InvalidArgumentException(sprintf('Action(s) "%s" are not defined by QueueManager', implode(', ', $diff)));
         }
+
+        if (!empty($diff = array_diff($exclude, $actions))) {
+            throw new \InvalidArgumentException(sprintf('Filter(s) "%s" are not defined by QueueManager', implode(', ', $diff)));
+        }
+
+        $include = array_diff($include, $exclude);
+
+        if (empty($include)) {
+            throw new \InvalidArgumentException('No actions specified to run');
+        }
+
+        // watch only these actions
+        $this->manager->watchOnly($include);
     }
 
     /**
-     * @param $msg
-     */
-    protected function output($msg)
-    {
-        $this->output->writeln(sprintf('[%s] %s', date('Y-m-d H:i:s'), $msg));
-    }
-
-    /**
-     * @param Job    $job
      * @param string $msg
+     * @param int    $threshold
      */
-    protected function log(Job $job, $msg)
+    protected function output($msg, $threshold = OutputInterface::VERBOSITY_NORMAL)
     {
-        $this->output(sprintf('[%s] %s', $job->getId(), $msg));
+        if ($this->output->getVerbosity() >= $threshold) {
+            $this->output->writeln(sprintf('[%s] %s', date('Y-m-d H:i:s'), $msg));
+        }
+    }
+
+    /**
+     * @param int $bytes
+     *
+     * @return string
+     */
+    private function formatBytes($bytes)
+    {
+        $bytes = (int) $bytes;
+
+        if ($bytes > 1024*1024) {
+            return round($bytes/1024/1024, 2).'MB';
+        } elseif ($bytes > 1024) {
+            return round($bytes/1024, 2).'KB';
+        }
+
+        return $bytes . 'B';
     }
 }

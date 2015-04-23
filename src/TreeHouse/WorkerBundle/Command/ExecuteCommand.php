@@ -47,17 +47,43 @@ class ExecuteCommand extends Command
         $action  = $input->getArgument('action');
         $payload = $input->getArgument('payload');
 
-        $output->writeln(sprintf('Performing action <info>%s</info> with payload <info>%s</info>', $action, json_encode($payload)));
-        $start = round(microtime(true) * 1000);
+        $output->writeln(sprintf('Performing action <info>%s</info> with payload <info>%s</info>', $action, json_encode($payload, JSON_UNESCAPED_SLASHES)));
+
+        $timeStart = microtime(true) * 1000;
+        $memStart  = memory_get_usage(true);
 
         $result = $this->manager->execute($action, $payload);
 
-        $stop = round(microtime(true) * 1000);
+        $duration = microtime(true) * 1000 - $timeStart;
+        $usage    = memory_get_usage(true) - $memStart;
 
-        $timing = $stop - $start;
+        $output->writeln(
+            sprintf(
+                'Completed in <comment>%dms</comment> using <comment>%s</comment> with result: <info>%s</info>',
+                $duration,
+                $this->formatBytes($usage),
+                json_encode($result, JSON_UNESCAPED_SLASHES)
+            )
+        );
 
         $this->manager->getDispatcher()->dispatch(WorkerEvents::FLUSH);
+    }
 
-        $output->writeln(sprintf('Completed in <comment>%dms</comment> with result: <comment>%s</comment>', $timing, json_encode($result)));
+    /**
+     * @param int $bytes
+     *
+     * @return string
+     */
+    private function formatBytes($bytes)
+    {
+        $bytes = (int) $bytes;
+
+        if ($bytes > 1024*1024) {
+            return round($bytes/1024/1024, 2).'MB';
+        } elseif ($bytes > 1024) {
+            return round($bytes/1024, 2).'KB';
+        }
+
+        return $bytes . 'B';
     }
 }

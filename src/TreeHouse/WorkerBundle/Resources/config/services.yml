@@ -1,5 +1,12 @@
 parameters:
   tree_house.worker.queue_manager.class: TreeHouse\WorkerBundle\QueueManager
+  tree_house.worker.command.clear.class: TreeHouse\WorkerBundle\Command\ClearCommand
+  tree_house.worker.command.execute.class: TreeHouse\WorkerBundle\Command\ExecuteCommand
+  tree_house.worker.command.inspect.class: TreeHouse\WorkerBundle\Command\InspectCommand
+  tree_house.worker.command.kick.class: TreeHouse\WorkerBundle\Command\KickCommand
+  tree_house.worker.command.list.class: TreeHouse\WorkerBundle\Command\ListCommand
+  tree_house.worker.command.run.class: TreeHouse\WorkerBundle\Command\RunCommand
+  tree_house.worker.command.schedule.class: TreeHouse\WorkerBundle\Command\ScheduleCommand
 
 services:
   tree_house.worker.queue_manager:
@@ -10,3 +17,54 @@ services:
       - @logger
     tags:
       - { name: monolog.logger, channel: worker }
+
+  tree_house.worker.command.clear:
+    class: %tree_house.worker.command.clear.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.execute:
+    class: %tree_house.worker.command.execute.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.inspect:
+    class: %tree_house.worker.command.inspect.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.kick:
+    class: %tree_house.worker.command.kick.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.list:
+    class: %tree_house.worker.command.list.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.run:
+    class: %tree_house.worker.command.run.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.schedule:
+    class: %tree_house.worker.command.schedule.class%
+    arguments:
+      - @tree_house.worker.queue_manager
+    calls:
+      - ['setDoctrine', [@?doctrine]]
+    tags:
+      - { name: console.command }

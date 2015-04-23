@@ -2,8 +2,8 @@
 
 namespace TreeHouse\WorkerBundle\Command;
 
+use Pheanstalk\Exception\ServerException;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,16 +55,31 @@ class ClearCommand extends Command
         $pheanstalk = $this->manager->getPheanstalk();
 
         foreach ($actions as $action) {
-            $stats = $pheanstalk->statsTube($action);
-            $progressbar = new ProgressBar($output, $stats['']);
+            try {
+                $stats = $pheanstalk->statsTube($action);
 
-            $output->writeln(
-                sprintf('Clearing <info>%s</info> jobs with <info>%s</info> status', $action, json_encode($states))
-            );
+                $amount = 0;
+                foreach ($states as $state) {
+                    $amount += $stats['current-jobs-' . $state];
+                }
 
-            $this->manager->clear($action, $states);
+                $output->writeln(
+                    sprintf(
+                        'Clearing <info>%d %s jobs</info> with <info>%s</info> status',
+                        $amount,
+                        $action,
+                        implode(', ', $states)
+                    )
+                );
 
-            $progressbar->finish();
+                $this->manager->clear($action, $states);
+
+                $output->writeln(['<info>Done!</info>', '']);
+            } catch (ServerException $e) {
+                if (false === strpos($e->getMessage(), 'NOT_FOUND')) {
+                    throw $e;
+                }
+            }
         }
     }
 }

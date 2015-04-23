@@ -1,10 +1,11 @@
 # The QueueManager
 
-The WorkerBundle creates a [QueueManager][0] service which acts as a central
+The WorkerBundle creates a [QueueManager][qm] service which acts as a central
 point to add jobs in the queue, receive them back from it, inspect, bury and
 delete jobs.
 
-[0]: /src/TreeHouse/WorkerBundle/QueueManager.php
+[qm]: /src/TreeHouse/WorkerBundle/QueueManager.php
+
 
 ## Examples
 
@@ -14,14 +15,17 @@ queue in Beanstalk parlance) named `example`.
 Add a job:
 
 ```php
-$queueManager->add('example', ['data']);
+$queueManager->add('example', $payload = ['data']);
 ```
 
 Receive a job:
 
 ```php
-# returns a \Pheanstalk\Job instance
-$queueManager->get();
+# watch the 'example' tube
+$queueManager->watch('example');
+
+# waits at most 10 seconds, returns a \Pheanstalk\Job instance
+$queueManager->get(10);
 ```
 
 Inspect a job. This returns the next-ready job from the queue, without actually
@@ -39,6 +43,12 @@ not be released until it's _kicked_ back onto the queue:
 $queueManager->bury($job);
 ```
 
+Kick jobs back onto the queue:
+
+```php
+$queueManager->kick('example', $max = 10);
+```
+
 Delete a job:
 
 ```php
@@ -50,6 +60,7 @@ Clear a tube:
 ```php
 $queueManager->clear('example');
 ```
+
 
 ## Adding for objects
 
@@ -64,6 +75,7 @@ we'll show how you this example works:
 $queueManager->addForObject('user.mail.registration', $user);
 ```
 
+
 ## Time to run
 
 When adding a job you can indicate how long a worker may take to process this
@@ -74,10 +86,11 @@ job has not been deleted, the queue considers the job as gone wrong and
 releases it, after which the job becomes available to reserve again.
 
 By default the time to run is set to 2 minutes. If you have a job that takes a
-long time to complete, make sure to increase the time to run, or to [touch][1]
-the job during the process.
+long time to complete, make sure to increase the time to run, or to
+[touch][proto] the job during the process.
 
-[1]: https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L308-L313
+[proto]: https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L308-L313
+
 
 ## Delaying & prioritizing jobs
 
@@ -87,7 +100,7 @@ control over when the job will be reserved to a worker.
 You can set a specific time after which the job can be reserved:
 
 ```php
-$queueManager->addForObject('user.mail.registration', $user, new \DateTime('+10 minutes'));
+$queueManager->addForObject('user.mail.registration', $user, '+10 minutes');
 ```
 
 This delays the job for 10 minutes after now.
@@ -109,7 +122,7 @@ Combining these arguments, you can influence even more control here:
 
 ```php
 # urgent, but only after 1 minute
-$queueManager->addForObject('user.mail.registration', $user, new \DateTime('+1 minute'), 10);
+$queueManager->addForObject('user.mail.registration', $user, '+1 minute', 10);
 ```
 
 Note how we're saying _influence_ here. Depending on the number of jobs in the
@@ -119,9 +132,10 @@ priority. If there are 1000 jobs scheduled for right now, and there are 10
 available workers, it may take some time for the queue to be completely
 processed.
 
+
 ## Next
 
 Now that we know how to manage jobs, let's see how we can actually _work_ them:
-[Executors][2].
+[Executors][doc-executors].
 
-[2]: /docs/3-executors.md
+[doc-executors]: /docs/3-executors.md

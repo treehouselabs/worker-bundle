@@ -2,21 +2,21 @@ worker-bundle
 =============
 
 A Symfony2 bundle that adds worker functionality to your project, using
-Beanstalkd[0] as the message queue.
+Beanstalkd[beanstalkd] as the message queue.
 
-[0]: http://kr.github.io/beanstalkd/
+[beanstalkd]: http://kr.github.io/beanstalkd/
 
 ## Installation
 
 For this process, we assume you have a Beanstalk server up and running.
 
-Install via [Composer][1]:
+Install via [Composer][composer]:
 
 ```bash
 $ composer require treehouselabs/worker-bundle:~1.0
 ```
 
-[1]: https://getcomposer.org
+[composer]: https://getcomposer.org
 
 Enable the bundle:
 
@@ -51,7 +51,7 @@ tree_house_worker:
     server: localhost
 ```
 
-The bundle also supports the [PheanstalkBundle][2], if you're using that:
+The bundle also supports the [PheanstalkBundle][pb], if you're using that:
 
 ```yaml
 # app/config/config.yml
@@ -60,15 +60,15 @@ tree_house_worker:
   pheanstalk: leezy.pheanstalk
 ```
 
-[2]: https://github.com/armetiz/LeezyPheanstalkBundle
+[pb]: https://github.com/armetiz/LeezyPheanstalkBundle
 
 ## Basic Usage
 
-The bundle creates a [`QueueManager`][3] service, which you can use to manage
+The bundle creates a [`QueueManager`][qm] service, which you can use to manage
 jobs. The manager has services registered to execute specific tasks, called
 _executors_. An executor receives a job from the QueueManager and processes it.
 
-[3]: /src/TreeHouse/WorkerBundle/QueueManager.php
+[qm]: /src/TreeHouse/WorkerBundle/QueueManager.php
 
 ### Defining executors
 
@@ -84,6 +84,11 @@ class HelloWorldExecutor extends AbstractExecutor
     public function getName()
     {
         return 'hello.world';
+    }
+
+    public function configurePayload(OptionsResolver $resolver)
+    {
+        $resolver->setRequired(0);
     }
 
     public function execute(array $payload)
@@ -136,20 +141,19 @@ php app/console worker:run
 # Completed job in 1ms with result: true
 ```
 
-You can run workers by adding them to your crontab, creating a [Supervisor][4]
-program for it, or whatever your preferred method is.
+You can run workers by adding them to your crontab, creating a
+[Supervisor][supervisord] program for it, or whatever your preferred method is.
 
-[4]: http://supervisord.org
+[supervisord]: http://supervisord.org
 
 ## Documentation
 
 1. [Message queues & workers][doc-1]
 2. [The QueueManager][doc-2]
 3. [Executors][doc-3]
-4. [Running workers][doc-4]
-5. Commands
+4. [Working jobs][doc-4]
 
 [doc-1]: /docs/1-introduction.md
 [doc-2]: /docs/2-queue-manager.md
 [doc-3]: /docs/3-executors.md
-[doc-4]: /docs/4-running-workers.md
+[doc-4]: /docs/4-working-jobs.md

@@ -6,10 +6,14 @@ use Pheanstalk\Exception;
 use Pheanstalk\Job;
 use Pheanstalk\PheanstalkInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\OptionsResolver\Exception\ExceptionInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 use TreeHouse\WorkerBundle\Event\ExecutionEvent;
 use TreeHouse\WorkerBundle\Event\JobEvent;
+use TreeHouse\WorkerBundle\Exception\AbortException;
 use TreeHouse\WorkerBundle\Exception\RescheduleException;
 use TreeHouse\WorkerBundle\Executor\ExecutorInterface;
 use TreeHouse\WorkerBundle\Executor\ObjectPayloadInterface;
@@ -43,16 +47,23 @@ class QueueManager
     protected $logger;
 
     /**
-     * Registered executors
+     * Registered executors.
      *
      * @var array<string, ExecutorInterface>
      */
     protected $executors = [];
 
     /**
-     * @param PheanstalkInterface $pheanstalk
-     * @param EventDispatcherInterface        $dispatcher
-     * @param LoggerInterface                 $logger
+     * Cached payload resolvers for the executors.
+     *
+     * @var OptionsResolver[]
+     */
+    protected $resolvers = [];
+
+    /**
+     * @param PheanstalkInterface      $pheanstalk
+     * @param EventDispatcherInterface $dispatcher
+     * @param LoggerInterface          $logger
      */
     public function __construct(PheanstalkInterface $pheanstalk, EventDispatcherInterface $dispatcher, LoggerInterface $logger = null)
     {
@@ -80,7 +91,7 @@ class QueueManager
     /**
      * @param string $action
      *
-     * @return boolean
+     * @return bool
      */
     public function hasExecutor($action)
     {
@@ -88,7 +99,7 @@ class QueueManager
     }
 
     /**
-     * Add an executor
+     * Add an executor.
      *
      * @param ExecutorInterface $executor
      *
@@ -109,18 +120,18 @@ class QueueManager
     }
 
     /**
-     * Returns a registered executor for given action
+     * Returns a registered executor for given action.
      *
      * @param string $action
      *
-     * @throws \InvalidArgumentException
+     * @throws \OutOfBoundsException
      *
      * @return ExecutorInterface
      */
     public function getExecutor($action)
     {
         if (!$this->hasExecutor($action)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new \OutOfBoundsException(sprintf(
                 'There is no executor registered for action "%s".',
                 $action
             ));
@@ -138,40 +149,112 @@ class QueueManager
     }
 
     /**
-     * Reschedules a job
+     * @param string $action
      *
-     * @param Job $job
-     * @param \DateTime       $date
+     * @throws Exception
      *
-     * @throws \InvalidArgumentException When `$date` is in the past
+     * @return array
      */
-    public function reschedule(Job $job, \DateTime $date)
+    public function getActionStats($action)
     {
-        if ($date < new \DateTime()) {
-            throw new \InvalidArgumentException(
-                sprintf('You cannot reschedule a job in the past (got %s, and the current date is %s)', $date->format(DATE_ISO8601), date(DATE_ISO8601))
-            );
-        }
+        try {
+            return $this->pheanstalk->statsTube($action);
+        } catch (Exception $exception) {
+            if (false !== strpos($exception->getMessage(), 'NOT_FOUND')) {
+                return null;
+            }
 
-        $this->pheanstalk->release($job, PheanstalkInterface::DEFAULT_PRIORITY, $date->getTimestamp() - time());
+            throw $exception;
+        }
     }
 
     /**
-     * Adds a job to the queue for an object
+     * Add a job to the queue.
      *
-     * @param string    $action   The action
-     * @param object    $object   The object to add a job for
-     * @param \DateTime $date     The time after which the job can be reserved. Defaults to the current time
-     * @param integer   $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
-     * @param integer   $ttr      Time To Run: seconds a job can be reserved for
+     * @param string     $action   The action
+     * @param array      $payload  The job's payload
+     * @param string|int $delay    The delay after which the job can be reserved.
+     *                             Can be a number of seconds, or a string which strtotime accepts
+     * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
+     * @param int        $ttr      Time To Run: seconds a job can be reserved for
+     *
+     * @throws \InvalidArgumentException When the action is not defined
+     * @throws \InvalidArgumentException When `$delay` or `$priority` is negative
+     *
+     * @return int The job id
+     */
+    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null)
+    {
+        if (false === $this->hasExecutor($action)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Action "%s" is not defined in QueueManager',
+                $action
+            ));
+        }
+
+        if (null === $delay) {
+            $delay = PheanstalkInterface::DEFAULT_DELAY;
+        }
+
+        if (null === $priority) {
+            $priority = PheanstalkInterface::DEFAULT_PRIORITY;
+        }
+
+        if (null === $ttr) {
+            $ttr = PheanstalkInterface::DEFAULT_TTR;
+        }
+
+        if (!is_numeric($delay)) {
+            $delay = strtotime($delay) - time();
+        }
+
+        if ($delay < 0) {
+            throw new \InvalidArgumentException(
+                sprintf('You cannot schedule a job in the past (delay was %d)', $delay)
+            );
+        }
+
+        if ($priority < 0) {
+            throw new \InvalidArgumentException(
+                sprintf('The priority for a job cannot be negative (was %d)', $priority)
+            );
+        }
+
+        $payload = json_encode($payload);
+        $jobId   = $this->pheanstalk->putInTube($action, $payload, $priority, $delay, $ttr);
+
+        $this->logJob(
+            $jobId,
+            sprintf(
+                'Added job in tube "%s" with: payload: %s, priority: %d, delay: %ds, ttr: %s',
+                $action,
+                $payload,
+                $priority,
+                $delay,
+                $ttr
+            )
+        );
+
+        return $jobId;
+    }
+
+    /**
+     * Adds a job to the queue for an object.
+     *
+     * @param string     $action   The action
+     * @param object     $object   The object to add a job for
+     * @param string|int $delay    The delay after which the job can be reserved.
+     *                             Can be a number of seconds, or a string which strtotime accepts
+     * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
+     * @param int        $ttr      Time To Run: seconds a job can be reserved for
      *
      * @throws \LogicException           If the executor does not accepts objects as payloads
      * @throws \InvalidArgumentException If the executor does not accept the given object
      * @throws \InvalidArgumentException When the action is not defined
      *
-     * @return integer The job id
+     * @return int The job id
      */
-    public function addForObject($action, $object, \DateTime $date = null, $priority = PheanstalkInterface::DEFAULT_PRIORITY, $ttr = 1200)
+    public function addForObject($action, $object, $delay = null, $priority = null, $ttr = null)
     {
         $executor = $this->getExecutor($action);
 
@@ -197,54 +280,77 @@ class QueueManager
 
         $payload = $executor->getObjectPayload($object);
 
-        return $this->add($action, $payload, $date, $priority, $ttr);
+        return $this->add($action, $payload, $delay, $priority, $ttr);
     }
 
     /**
-     * Add a job to the queue
+     * Reschedules a job.
      *
-     * @param string    $action   The action
-     * @param array     $payload  The job's payload
-     * @param \DateTime $date     The time after which the job can be reserved. Defaults to the current time
-     * @param integer   $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
-     * @param integer   $ttr      Time To Run: seconds a job can be reserved for
+     * @param Job       $job
+     * @param \DateTime $date
      *
-     * @throws \InvalidArgumentException When the action is not defined
      * @throws \InvalidArgumentException When `$date` is in the past
-     *
-     * @return integer The job id
      */
-    public function add($action, array $payload, \DateTime $date = null, $priority = PheanstalkInterface::DEFAULT_PRIORITY, $ttr = 1200)
+    public function reschedule(Job $job, \DateTime $date)
     {
-        if (false === $this->hasExecutor($action)) {
-            throw new \InvalidArgumentException(sprintf(
-                'Action "%s" is not defined in QueueManager',
-                $action
-            ));
-        }
-
-        if (null === $date) {
-            $date = new \DateTime();
-        }
-
-        $delay = $date->getTimestamp() - time();
-        if ($delay < 0) {
+        if ($date < new \DateTime()) {
             throw new \InvalidArgumentException(
-                sprintf('You cannot schedule a job in the past (got %s, and the current date is %s)', $date->format(DATE_ISO8601), date(DATE_ISO8601))
+                sprintf('You cannot reschedule a job in the past (got %s, and the current date is %s)', $date->format(DATE_ISO8601), date(DATE_ISO8601))
             );
         }
 
-        if ($priority < 0) {
-            $priority = 0;
-        }
+        $this->pheanstalk->release($job, PheanstalkInterface::DEFAULT_PRIORITY, $date->getTimestamp() - time());
 
-        return $this->pheanstalk->putInTube($action, json_encode($payload), $priority, $delay, $ttr);
+        $this->logJob($job->getId(), sprintf('Rescheduled job for %s', $date->format('Y-m-d H:i:s')));
     }
 
     /**
-     * @param integer $timeout
+     * @param string|string[] $actions
+     */
+    public function watch($actions)
+    {
+        if (!is_array($actions)) {
+            $actions = [$actions];
+        }
+
+        foreach ($actions as $action) {
+            $this->pheanstalk->watch($action);
+
+            $this->logger->debug(sprintf('Watching tube "%s"', $action));
+        }
+    }
+
+    /**
+     * @param string|string[] $actions
+     */
+    public function watchOnly($actions)
+    {
+        $watching = $this->pheanstalk->listTubesWatched();
+
+        $this->watch($actions);
+        $this->ignore($watching);
+    }
+
+    /**
+     * @param string|string[] $actions
+     */
+    public function ignore($actions)
+    {
+        if (!is_array($actions)) {
+            $actions = [$actions];
+        }
+
+        foreach ($actions as $action) {
+            $this->pheanstalk->ignore($action);
+
+            $this->logger->debug(sprintf('Ignoring tube "%s"', $action));
+        }
+    }
+
+    /**
+     * @param int $timeout
      *
-     * @return Job
+     * @return Job|bool A job if there is one, false otherwise
      */
     public function get($timeout = null)
     {
@@ -260,8 +366,9 @@ class QueueManager
      *
      * @throws \InvalidArgumentException When $action is not a defined action
      * @throws \InvalidArgumentException When $state is not a valid state
+     * @throws Exception                 When Pheanstalk decides to do this
      *
-     * @return Job The next job for the given state.
+     * @return Job The next job for the given state, or null if there is no next job
      */
     public function peek($action, $state = 'ready')
     {
@@ -281,7 +388,15 @@ class QueueManager
 
         $peekMethod = sprintf('peek%s', ucfirst($state));
 
-        return $this->pheanstalk->$peekMethod($action);
+        try {
+            return $this->pheanstalk->$peekMethod($action);
+        } catch (Exception $exception) {
+            if (false !== strpos($exception->getMessage(), 'NOT_FOUND')) {
+                return null;
+            }
+
+            throw $exception;
+        }
     }
 
     /**
@@ -292,6 +407,8 @@ class QueueManager
     public function delete(Job $job)
     {
         $this->pheanstalk->delete($job);
+
+        $this->logJob($job->getId(), 'Job deleted');
     }
 
     /**
@@ -302,6 +419,29 @@ class QueueManager
     public function bury(Job $job)
     {
         $this->pheanstalk->bury($job);
+
+        $this->logJob($job->getId(), 'Job buried');
+    }
+
+    /**
+     * Puts a job into a 'buried' state, revived only by 'kick' command.
+     *
+     * @param string $action
+     * @param int    $max
+     *
+     * @return int The number of kicked jobs
+     */
+    public function kick($action, $max)
+    {
+        $this->pheanstalk->useTube($action);
+
+        $kicked = $this->pheanstalk->kick($max);
+
+        $this->logger->debug(
+            sprintf('Kicked %d "%s" jobs back onto the ready queue', $kicked, $action)
+        );
+
+        return $kicked;
     }
 
     /**
@@ -315,24 +455,26 @@ class QueueManager
     }
 
     /**
-     * Process a job
-     *
      * @param Job $job        The job to process
-     * @param integer         $maxRetries The number of retries for this job
+     * @param int $maxRetries The number of retries for this job
      *
-     * @return boolean|mixed The executor result if successful, false otherwise
+     * @throws AbortException
+     *
+     * @return bool|mixed The executor result if successful, false otherwise
      */
     public function executeJob(Job $job, $maxRetries = 1)
     {
         $this->dispatcher->dispatch(WorkerEvents::EXECUTE_JOB, new JobEvent($job));
 
-        $stats   = $this->pheanstalk->statsJob($job);
-        $payload = (array) json_decode($job->getData(), true);
+        $stats    = $this->pheanstalk->statsJob($job);
+        $payload  = (array) json_decode($job->getData(), true);
+        $releases = intval($stats['releases']);
 
         // context for logging
         $context = [
             'tube'    => $stats['tube'],
             'payload' => $payload,
+            'attempt' => $releases + 1,
         ];
 
         try {
@@ -344,47 +486,25 @@ class QueueManager
 
             return $result;
         } catch (RescheduleException $re) {
-            // issue a reschedule
+            // reschedule the job
             $this->reschedule($job, $re->getRescheduleDate());
-
-            $this->logger->notice(
-                sprintf(
-                    'Rescheduled job for %s: %s',
-                    $re->getRescheduleDate()->format('c'),
-                    $re->getRescheduleMessage()
-                ),
-                $context
-            );
+        } catch (AbortException $e) {
+            // abort thrown from executor, rethrow it and let the caller handle it
+            throw $e;
         } catch (\Exception $e) {
-            // some other exception occured, see if we have any retries left
-            $releases = intval($stats['releases']);
+            // some other exception occured
+            $message = sprintf('Exception occurred: %s in %s on line %d', $e->getMessage(), $e->getFile(), $e->getLine());
+            $this->logJob($job->getId(), $message, LogLevel::ERROR, $context);
+            $this->logJob($job->getId(), $e->getTraceAsString(), LogLevel::DEBUG, $context);
+
+            // see if we have any retries left
+
             if ($releases > $maxRetries) {
                 // no more retries, bury job for manual inspection
                 $this->bury($job);
-
-                $this->logger->error(
-                    sprintf(
-                        'Exception occurred: %s in %s on line %d',
-                        $e->getMessage(),
-                        $e->getFile(),
-                        $e->getLine()
-                    ),
-                    $context
-                );
             } else {
                 // try again, regardless of the error
                 $this->reschedule($job, new \DateTime('+10 minutes'));
-
-                $this->logger->warning(
-                    sprintf(
-                        'Exception occurred: %s in %s on line %d, rescheduling job...',
-                        $e->getMessage(),
-                        $e->getFile(),
-                        $e->getLine()
-                    ),
-                    $context
-                );
-                $this->logger->debug($e->getTraceAsString(), $context);
             }
         }
 
@@ -397,24 +517,33 @@ class QueueManager
      * @param string $action
      * @param array  $payload
      *
-     * @throws \RuntimeException
-     *
      * @return mixed
      */
     public function execute($action, array $payload)
     {
-        if (!$this->hasExecutor($action)) {
-            throw new \RuntimeException(sprintf('Action "%s" is not defined in QueueManager', $action));
-        }
-
         $executor = $this->getExecutor($action);
 
         // dispatch pre event, listeners may change the payload here
         $event = new ExecutionEvent($executor, $action, $payload);
         $this->dispatcher->dispatch(WorkerEvents::PRE_EXECUTE_ACTION, $event);
 
-        $result = $executor->execute($event->getPayload());
+        try {
+            $resolver = $this->getPayloadResolver($executor);
+            $payload  = $resolver->resolve($event->getPayload());
+        } catch (ExceptionInterface $exception) {
+            $this->logger->error(
+                sprintf(
+                    'Payload %s for "%s" is invalid: %s',
+                    json_encode($payload, JSON_UNESCAPED_SLASHES),
+                    $action,
+                    $exception->getMessage()
+                )
+            );
 
+            return false;
+        }
+
+        $result = $executor->execute($payload);
         // dispatch post event, listeners may change the result here
         $event->setResult($result);
         $this->dispatcher->dispatch(WorkerEvents::POST_EXECUTE_ACTION, $event);
@@ -444,28 +573,53 @@ class QueueManager
      * @param string $tube
      * @param string $state
      *
-     * @throws \Exception
+     * @throws Exception
      */
     protected function clearTube($tube, $state = 'ready')
     {
+        $this->logger->info(sprintf('Clearing all jobs with the "%s" state in tube "%s"', $state, $tube));
+
         while ($job = $this->peek($tube, $state)) {
-            $this->deleteJob($job);
+            try {
+                $this->delete($job);
+            } catch (Exception $e) {
+                // job could have been deleted by another process
+                if (false === strpos($e->getMessage(), 'NOT_FOUND')) {
+                    throw $e;
+                }
+            }
         }
     }
 
     /**
-     * @param Job $job
+     * Returns a cached version of the payload resolver for an executor.
      *
-     * @throws Exception
+     * @param ExecutorInterface $executor
+     *
+     * @return OptionsResolver
      */
-    protected function deleteJob(Job $job)
+    protected function getPayloadResolver(ExecutorInterface $executor)
     {
-        try {
-            $this->pheanstalk->delete($job);
-        } catch (Exception $e) {
-            if (false === strpos($e->getMessage(), '/NOT_FOUND/')) {
-                throw $e;
-            }
+        $key = $executor->getName();
+
+        if (!array_key_exists($key, $this->resolvers)) {
+            $resolver = new OptionsResolver();
+            $executor->configurePayload($resolver);
+
+            $this->resolvers[$key] = $resolver;
         }
+
+        return $this->resolvers[$key];
+    }
+
+    /**
+     * @param int    $jobId
+     * @param string $msg
+     * @param string $level
+     * @param array  $context
+     */
+    protected function logJob($jobId, $msg, $level = LogLevel::DEBUG, array $context = [])
+    {
+        $this->logger->log($level, sprintf('[%s] %s', $jobId, $msg), $context);
     }
 }

@@ -4,10 +4,11 @@ namespace TreeHouse\WorkerBundle\Command;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManagerInterface;
+use Pheanstalk\PheanstalkInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use TreeHouse\WorkerBundle\QueueManager;
 
@@ -24,15 +25,21 @@ class ScheduleCommand extends Command
     protected $doctrine;
 
     /**
-     * @param QueueManager    $queueManager
-     * @param ManagerRegistry $doctrine
+     * @param QueueManager $queueManager
      */
-    public function __construct(QueueManager $queueManager, ManagerRegistry $doctrine)
+    public function __construct(QueueManager $queueManager)
     {
         $this->manager = $queueManager;
-        $this->doctrine = $doctrine;
 
         parent::__construct();
+    }
+
+    /**
+     * @param ManagerRegistry $doctrine
+     */
+    public function setDoctrine(ManagerRegistry $doctrine = null)
+    {
+        $this->doctrine = $doctrine;
     }
 
     /**
@@ -44,6 +51,9 @@ class ScheduleCommand extends Command
             ->setName('worker:schedule')
             ->addArgument('action', InputArgument::REQUIRED, 'The action to execute')
             ->addArgument('payload', InputArgument::IS_ARRAY, 'The payload to send to the action')
+            ->addOption('delay', null, InputOption::VALUE_OPTIONAL, 'The delay to give to the scheduled jobs, in seconds', PheanstalkInterface::DEFAULT_DELAY)
+            ->addOption('priority', 'p', InputOption::VALUE_OPTIONAL, 'The priority to give to the scheduled jobs', PheanstalkInterface::DEFAULT_PRIORITY)
+            ->addOption('ttr', 't', InputOption::VALUE_OPTIONAL, 'The time-to-run to give to the scheduled jobs', PheanstalkInterface::DEFAULT_TTR)
             ->addOption('dql', 'd', InputOption::VALUE_OPTIONAL, 'A DQL query to execute. The resulting entities will all be forwarded to the job scheduler')
             ->setDescription('Schedules jobs based on a payload or DQL result set')
         ;
@@ -54,16 +64,20 @@ class ScheduleCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $action  = $input->getArgument('action');
-        $payload = $input->getArgument('payload');
-        $dql     = $input->getOption('dql');
+        $action   = $input->getArgument('action');
+        $payload  = $input->getArgument('payload');
+        $priority = $input->getOption('priority');
+        $delay    = $input->getOption('delay');
+        $ttr      = $input->getOption('ttr');
+        $dql      = $input->getOption('dql');
 
         if ($payload && $dql) {
             throw new \InvalidArgumentException('You cannot provide both a <comment>payload</comment> and a <comment>--dql</comment> query.');
         }
 
         if (!empty($payload)) {
-            $job = $this->manager->add($action, $payload);
+            $job  = $this->manager->add($action, $payload, $delay, $priority, $ttr);
+
             $output->writeln(sprintf('Scheduled job <info>%d</info> with payload <info>%s</info>', $job, json_encode($payload)));
 
             return 0;
@@ -71,6 +85,12 @@ class ScheduleCommand extends Command
 
         if (empty($dql)) {
             throw new \InvalidArgumentException('You must provide either a <comment>payload</comment> or a <comment>--dql</comment> query.');
+        }
+
+        if (!$this->doctrine) {
+            $output->writeln('<error>Doctrine is required for the --dql option</error>');
+
+            return 1;
         }
 
         $doctrine = $this->doctrine->getManager();
@@ -84,12 +104,12 @@ class ScheduleCommand extends Command
         $meta  = null;
         $query = $doctrine->createQuery($dql);
 
-        foreach ($query->iterate() as list ($entity)) {
+        foreach ($query->iterate() as list($entity)) {
             if (!$meta) {
                 $meta = $doctrine->getClassMetadata(get_class($entity));
             }
 
-            $job = $this->manager->addForObject($action, $entity);
+            $job = $this->manager->addForObject($action, $entity, $delay, $priority, $ttr);
 
             $output->writeln(
                 sprintf(

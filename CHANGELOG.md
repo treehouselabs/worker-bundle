@@ -17,6 +17,8 @@ BC breaks:
    * `addJobExecutor()` => `addExecutor()` in `QueueManager`
    * `getJobExecutor()` => `getExecutor()` in `QueueManager`
 * The `$payload` argument in `QueueManager::add()` is now required.
+* The `$date` argument in `QueueManager::add()`and `QueueManager::addForObject()`
+  has been replaced by a `$delay` argument.
 * Renamed `QueueManager::get()` to `QueueManager::peek()` to better reflect the
   method that is used.
 * The `$action` argument in `QueueManager::peek()` is now required.
@@ -39,6 +41,8 @@ BC breaks:
 * Executors now need to be tagged with `tree_house.worker.executor` instead of
   `fm_worker.queue.job_executor`.
 * Removed `fm_worker.logger.handler` support
+* Removed the `WorkerEvents::RUN_TERMINATE` event: use the console termination
+  event instead.
 
 Changes:
 

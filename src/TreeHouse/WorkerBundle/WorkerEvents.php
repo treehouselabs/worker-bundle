@@ -11,11 +11,6 @@ final class WorkerEvents
     const FLUSH = 'worker.flush';
 
     /**
-     * Dispatched when the run command terminates
-     */
-    const RUN_TERMINATE = 'worker.run.terminate';
-
-    /**
      * Dispatched when executing a job.
      * Listeners receive a JobEvent instance.
      */

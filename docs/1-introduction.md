@@ -7,14 +7,14 @@ use it in your project.
 Take in mind that this bundle provides basic worker functionality: adding
 payloads to a distributing queue and processing those. If you want more control
 and stuff, like implementing PubSub patterns, message routing, remote procedure
-calls and what not, take a look at our [QueueBundle][0], which uses the AMQP
+calls and what not, take a look at our [QueueBundle][qb], which uses the AMQP
 messaging protocol.
 
 In this documentation we'll only be referring to queues/messages/workers, etc.
 in the context of Beanstalk. This is not the Wikipedia page on message queues
 :wink:.
 
-[0]: https://github.com/treehouselabs/TreeHouseQueueBundle
+[qb]: https://github.com/treehouselabs/TreeHouseQueueBundle
 
 ## What are message queues and workers?
 
@@ -49,4 +49,6 @@ should use them. If you're not convinced yet, you need to read more :wink:.
 ## Next
 
 In the next chapter we will explain how these concepts are implemented in this
-bundle: [The QueueManager][/docs/2-queue-manager.md]
+bundle: [The QueueManager][doc-qm]
+
+[doc-qm]: /docs/2-queue-manager.md
