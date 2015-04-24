@@ -34,7 +34,7 @@ class ExecuteCommand extends Command
         $this
             ->setName('worker:execute')
             ->addArgument('action', InputArgument::REQUIRED, 'The action to execute')
-            ->addArgument('payload', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The payload to send to the action')
+            ->addArgument('payload', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'The payload to send to the action')
             ->setDescription('Executes a single job with given payload. This doesn\'t use the regular queue')
         ;
     }
