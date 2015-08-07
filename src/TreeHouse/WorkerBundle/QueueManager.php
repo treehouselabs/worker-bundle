@@ -496,8 +496,10 @@ class QueueManager
         } catch (\Exception $e) {
             // some other exception occured
             $message = sprintf('Exception occurred: %s in %s on line %d', $e->getMessage(), $e->getFile(), $e->getLine());
+
+            $context['trace'] = $e->getTraceAsString();
+
             $this->logJob($job->getId(), $message, LogLevel::ERROR, $context);
-            $this->logJob($job->getId(), $e->getTraceAsString(), LogLevel::DEBUG, $context);
 
             // see if we have any retries left
 
@@ -569,6 +571,14 @@ class QueueManager
         foreach ($states as $state) {
             $this->clearTube($action, $state);
         }
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
     }
 
     /**
