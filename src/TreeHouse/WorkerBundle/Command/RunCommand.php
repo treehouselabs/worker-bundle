@@ -2,6 +2,7 @@
 
 namespace TreeHouse\WorkerBundle\Command;
 
+use Symfony\Bridge\Monolog\Handler\ConsoleHandler;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -62,6 +63,11 @@ class RunCommand extends Command
         $maxTime   = intval($input->getOption('max-time'));
         $maxJobs   = intval($input->getOption('limit'));
         $batchSize = intval($input->getOption('batch-size'));
+
+        $logger = $this->manager->getLogger();
+        if (($logger instanceof Monolog\Logger) && false === $this->hasConsoleHandler($logger)) {
+            $logger->pushHandler(new ConsoleHandler($output));
+        }
 
         // configure pheanstalk to watch the right tubes
         $this->watchActions($input->getOption('action'), $input->getOption('exclude'));
@@ -159,6 +165,22 @@ class RunCommand extends Command
         $this->output('Shutting down worker');
 
         return $exit;
+    }
+
+    /**
+     * @param Monolog\Logger $logger
+     *
+     * @return bool
+     */
+    protected function hasConsoleHandler(Monolog\Logger $logger)
+    {
+        foreach ($logger->getHandlers() as $handler) {
+            if ($handler instanceof ConsoleHandler) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
