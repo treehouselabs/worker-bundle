@@ -496,13 +496,10 @@ class QueueManager
         } catch (\Exception $e) {
             // some other exception occured
             $message = sprintf('Exception occurred: %s in %s on line %d', $e->getMessage(), $e->getFile(), $e->getLine());
-
-            $context['trace'] = $e->getTraceAsString();
-
             $this->logJob($job->getId(), $message, LogLevel::ERROR, $context);
+            $this->logJob($job->getId(), $e->getTraceAsString(), LogLevel::DEBUG, $context);
 
             // see if we have any retries left
-
             if ($releases > $maxRetries) {
                 // no more retries, bury job for manual inspection
                 $this->bury($job);
