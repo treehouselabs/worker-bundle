@@ -47,6 +47,7 @@ class RunCommand extends Command
             ->addOption('max-memory', 'm', InputOption::VALUE_OPTIONAL, 'Maximum amount of memory to use (in MB). The worker will try to stop before this limit is reached. Set to 0 for infinite.', 0)
             ->addOption('max-time', 't', InputOption::VALUE_OPTIONAL, 'Maximum running time in seconds. Set to 0 for infinite', 0)
             ->addOption('batch-size', 'b', InputOption::VALUE_OPTIONAL, 'Number of jobs to process before completing a batch', 15)
+            ->addOption('min-duration', 'd', InputOption::VALUE_OPTIONAL, 'Number of seconds to the worker process should minimal take to run', 15)
         ;
     }
 
@@ -59,10 +60,11 @@ class RunCommand extends Command
 
         $dispatcher   = $this->manager->getDispatcher();
 
-        $maxMemory = intval($input->getOption('max-memory')) * 1024 * 1024;
-        $maxTime   = intval($input->getOption('max-time'));
-        $maxJobs   = intval($input->getOption('limit'));
-        $batchSize = intval($input->getOption('batch-size'));
+        $maxMemory   = intval($input->getOption('max-memory')) * 1024 * 1024;
+        $maxTime     = intval($input->getOption('max-time'));
+        $maxJobs     = intval($input->getOption('limit'));
+        $batchSize   = intval($input->getOption('batch-size'));
+        $minDuration = intval($input->getOption('min-duration'));
 
         $logger = $this->manager->getLogger();
         if (($logger instanceof Monolog\Logger) && false === $this->hasConsoleHandler($logger)) {
@@ -73,7 +75,6 @@ class RunCommand extends Command
         $this->watchActions($input->getOption('action'), $input->getOption('exclude'));
 
         $start         = time();
-        $minDuration   = 15;
         $jobsCompleted = 0;
 
         // wait for job, timeout after 1 minute

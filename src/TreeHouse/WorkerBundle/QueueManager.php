@@ -12,6 +12,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\OptionsResolver\Exception\ExceptionInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use TreeHouse\WorkerBundle\Event\ExecutionEvent;
+use TreeHouse\WorkerBundle\Event\JobBuriedEvent;
 use TreeHouse\WorkerBundle\Event\JobEvent;
 use TreeHouse\WorkerBundle\Exception\AbortException;
 use TreeHouse\WorkerBundle\Exception\RescheduleException;
@@ -503,6 +504,8 @@ class QueueManager
             if ($releases > $maxRetries) {
                 // no more retries, bury job for manual inspection
                 $this->bury($job);
+
+                $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e, $releases));
             } else {
                 // try again, regardless of the error
                 $this->reschedule($job, new \DateTime('+10 minutes'));
