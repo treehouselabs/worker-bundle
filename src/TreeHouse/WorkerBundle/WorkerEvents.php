@@ -17,6 +17,12 @@ final class WorkerEvents
     const EXECUTE_JOB = 'worker.job.execute';
 
     /**
+     * Dispatched when job is buried
+     * Listeners receive a JobBuriedEvent instance.
+     */
+    const JOB_BURIED_EVENT = 'worker.job.buried';
+
+    /**
      * Dispatched before executing an action.
      * Listeners receive a ExecutionEvent instance.
      */
