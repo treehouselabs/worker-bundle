@@ -47,7 +47,7 @@ class RunCommand extends Command
             ->addOption('max-memory', 'm', InputOption::VALUE_OPTIONAL, 'Maximum amount of memory to use (in MB). The worker will try to stop before this limit is reached. Set to 0 for infinite.', 0)
             ->addOption('max-time', 't', InputOption::VALUE_OPTIONAL, 'Maximum running time in seconds. Set to 0 for infinite', 0)
             ->addOption('batch-size', 'b', InputOption::VALUE_OPTIONAL, 'Number of jobs to process before completing a batch', 15)
-            ->addOption('min-duration', 'd', InputOption::VALUE_OPTIONAL, 'Number of seconds to the worker process should minimal take to run', 60)
+            ->addOption('min-duration', 'd', InputOption::VALUE_OPTIONAL, 'Number of seconds to the worker process should minimal take to run', 15)
         ;
     }
 
