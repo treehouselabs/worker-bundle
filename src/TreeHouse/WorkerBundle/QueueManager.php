@@ -505,7 +505,7 @@ class QueueManager
                 // no more retries, bury job for manual inspection
                 $this->bury($job);
 
-                $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e), $releases);
+                $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e, $releases));
             } else {
                 // try again, regardless of the error
                 $this->reschedule($job, new \DateTime('+10 minutes'));
