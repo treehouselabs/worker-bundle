@@ -21,8 +21,7 @@
   },
   "require-dev": {
     "doctrine/orm": "~2.3",
-    "phpunit/phpunit": "~4.5",
-    "phpunit/phpunit-mock-objects": "2.3.0"
+    "phpunit/phpunit": "~4.5"
   },
   "autoload": {
     "psr-4": {
