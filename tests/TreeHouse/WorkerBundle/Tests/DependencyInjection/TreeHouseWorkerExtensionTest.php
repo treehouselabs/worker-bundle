@@ -118,4 +118,53 @@ class TreeHouseWorkerExtensionTest extends \PHPUnit_Framework_TestCase
             ],
         ];
     }
+
+    public function testDefaultTtr()
+    {
+        $config = [
+            'tree_house.worker' => [
+                'queue' => [
+                    'server'  => 'localhost',
+                    'port'    => 1234,
+                    'timeout' => 60,
+                ],
+                'queue_manager' => [
+                    'default_ttr'  => 600,
+                ],
+            ],
+        ];
+
+        $this->extension->load($config, $this->container);
+        $this->container->compile();
+
+        $this->assertTrue($this->container->hasDefinition('tree_house.worker.queue_manager'));
+
+        $definition = $this->container->getDefinition('tree_house.worker.queue_manager');
+        $methodCalls = $definition->getMethodCalls();
+
+        $this->assertContains(['setDefaultTtr', [600]], $methodCalls);
+    }
+
+    public function testDefaultDefaultTtrIs1200()
+    {
+        $config = [
+            'tree_house.worker' => [
+                'queue' => [
+                    'server'  => 'localhost',
+                    'port'    => 1234,
+                    'timeout' => 60,
+                ]
+            ],
+        ];
+
+        $this->extension->load($config, $this->container);
+        $this->container->compile();
+
+        $this->assertTrue($this->container->hasDefinition('tree_house.worker.queue_manager'));
+
+        $definition = $this->container->getDefinition('tree_house.worker.queue_manager');
+        $methodCalls = $definition->getMethodCalls();
+
+        $this->assertContains(['setDefaultTtr', [1200]], $methodCalls);
+    }
 }

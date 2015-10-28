@@ -44,13 +44,20 @@ class Configuration implements ConfigurationInterface
         ;
 
         // queue manager settings
-        $qm = $rootNode->arrayNode('queue_manager')->children();
+
+        $qm = $rootNode->arrayNode('queue_manager');
         $qm
-            ->scalarNode('default_ttr')
-            ->cannotBeEmpty()
-            ->defaultValue(1200)
-            ->info('Default time-to-run for a job')
+            ->addDefaultsIfNotSet()
+            ->children()
+                ->scalarNode('default_ttr')
+                    ->cannotBeEmpty()
+                    ->defaultValue(1200)
+                    ->isRequired()
+                    ->info('Default time-to-run for a job')
+                ->end()
+            ->end()
         ;
+
 
         return $treeBuilder;
     }
