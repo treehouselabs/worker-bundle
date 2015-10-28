@@ -56,5 +56,8 @@ class TreeHouseWorkerExtension extends Extension
 
         $pheanstalk = new Definition(Pheanstalk::class, $pheanstalkConfig);
         $queueManager->replaceArgument(0, $pheanstalk);
+
+        // set default ttr
+        $queueManager->addMethodCall('setDefaultTtr', [$config['queue_manager']['default_ttr']]);
     }
 }

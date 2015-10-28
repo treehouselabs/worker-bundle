@@ -20,6 +20,7 @@ class Configuration implements ConfigurationInterface
             ->info('The id of a pheanstalk service. The service must implement Pheanstalk\\PheanstalkInterface')
         ;
 
+        // beanstalk settings
         $queue = $rootNode->arrayNode('queue')->children();
         $queue
             ->scalarNode('server')
@@ -40,6 +41,15 @@ class Configuration implements ConfigurationInterface
             ->cannotBeEmpty()
             ->defaultValue(60)
             ->info('Connection timeout')
+        ;
+
+        // queue manager settings
+        $qm = $rootNode->arrayNode('queue_manager')->children();
+        $qm
+            ->scalarNode('default_ttr')
+            ->cannotBeEmpty()
+            ->defaultValue(1200)
+            ->info('Default time-to-run for a job')
         ;
 
         return $treeBuilder;

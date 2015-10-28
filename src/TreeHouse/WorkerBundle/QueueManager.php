@@ -62,6 +62,11 @@ class QueueManager
     protected $resolvers = [];
 
     /**
+     * @var int
+     */
+    protected $defaultTtr = PheanstalkInterface::DEFAULT_TTR;
+
+    /**
      * @param PheanstalkInterface      $pheanstalk
      * @param EventDispatcherInterface $dispatcher
      * @param LoggerInterface          $logger
@@ -71,6 +76,18 @@ class QueueManager
         $this->pheanstalk = $pheanstalk;
         $this->dispatcher = $dispatcher;
         $this->logger     = $logger ?: new NullLogger();
+    }
+
+    /**
+     * @param int $defaultTtr
+     *
+     * @return $this
+     */
+    public function setDefaultTtr($defaultTtr)
+    {
+        $this->defaultTtr = $defaultTtr;
+
+        return $this;
     }
 
     /**
@@ -203,7 +220,7 @@ class QueueManager
         }
 
         if (null === $ttr) {
-            $ttr = PheanstalkInterface::DEFAULT_TTR;
+            $ttr = $this->defaultTtr;
         }
 
         if (!is_numeric($delay)) {
