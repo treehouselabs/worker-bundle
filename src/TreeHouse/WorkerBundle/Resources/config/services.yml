@@ -13,58 +13,58 @@ services:
     class: %tree_house.worker.queue_manager.class%
     arguments:
       - ~ # injected in extension
-      - @event_dispatcher
-      - @logger
+      - '@event_dispatcher'
+      - '@logger'
     tags:
       - { name: monolog.logger, channel: worker }
 
   tree_house.worker.command.clear:
     class: %tree_house.worker.command.clear.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.execute:
     class: %tree_house.worker.command.execute.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.inspect:
     class: %tree_house.worker.command.inspect.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.kick:
     class: %tree_house.worker.command.kick.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.list:
     class: %tree_house.worker.command.list.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.run:
     class: %tree_house.worker.command.run.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.schedule:
     class: %tree_house.worker.command.schedule.class%
     arguments:
-      - @tree_house.worker.queue_manager
+      - '@tree_house.worker.queue_manager'
     calls:
-      - ['setDoctrine', [@?doctrine]]
+      - ['setDoctrine', ['@?doctrine']]
     tags:
       - { name: console.command }
