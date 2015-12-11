@@ -1,14 +1,16 @@
-worker-bundle
+Worker bundle
 =============
 
-A Symfony2 bundle that adds worker functionality to your project, using
+[![Latest Version on Packagist][ico-version]][link-packagist]
+[![Software License][ico-license]](LICENSE.md)
+[![Build Status][ico-travis]][link-travis]
+[![Coverage Status][ico-scrutinizer]][link-scrutinizer]
+[![Quality Score][ico-code-quality]][link-code-quality]
+
+A Symfony bundle that adds worker functionality to your project, using
 [Beanstalkd][beanstalkd] as the message queue.
 
 [beanstalkd]: http://kr.github.io/beanstalkd/
-
-[![Build Status](https://travis-ci.org/treehouselabs/TreeHouseWorkerBundle.svg)](https://travis-ci.org/treehouselabs/TreeHouseWorkerBundle)
-[![Code Coverage](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/badges/coverage.png)](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/badges/quality-score.png)](https://scrutinizer-ci.com/g/treehouselabs/TreeHouseWorkerBundle/)
 
 ## Installation
 
@@ -150,6 +152,7 @@ You can run workers by adding them to your crontab, creating a
 
 [supervisord]: http://supervisord.org
 
+
 ## Documentation
 
 1. [Message queues & workers][doc-1]
@@ -161,3 +164,36 @@ You can run workers by adding them to your crontab, creating a
 [doc-2]: /docs/2-queue-manager.md
 [doc-3]: /docs/3-executors.md
 [doc-4]: /docs/4-working-jobs.md
+
+
+## Security
+
+If you discover any security related issues, please email dev@treehouse.nl
+instead of using the issue tracker.
+
+
+## License
+
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+
+## Credits
+
+- [Peter Kruithof][link-author]
+- [All Contributors][link-contributors]
+
+
+[ico-version]: https://img.shields.io/packagist/v/treehouselabs/worker-bundle.svg?style=flat-square
+[ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
+[ico-travis]: https://img.shields.io/travis/treehouselabs/worker-bundle/master.svg?style=flat-square
+[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/treehouselabs/worker-bundle.svg?style=flat-square
+[ico-code-quality]: https://img.shields.io/scrutinizer/g/treehouselabs/worker-bundle.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/treehouselabs/worker-bundle.svg?style=flat-square
+
+[link-packagist]: https://packagist.org/packages/treehouselabs/worker-bundle
+[link-travis]: https://travis-ci.org/treehouselabs/worker-bundle
+[link-scrutinizer]: https://scrutinizer-ci.com/g/treehouselabs/worker-bundle/code-structure
+[link-code-quality]: https://scrutinizer-ci.com/g/treehouselabs/worker-bundle
+[link-downloads]: https://packagist.org/packages/treehouselabs/worker-bundle
+[link-author]: https://github.com/pkruithof
+[link-contributors]: ../../contributors
