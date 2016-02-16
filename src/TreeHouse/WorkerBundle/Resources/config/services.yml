@@ -1,16 +1,6 @@
-parameters:
-  tree_house.worker.queue_manager.class: TreeHouse\WorkerBundle\QueueManager
-  tree_house.worker.command.clear.class: TreeHouse\WorkerBundle\Command\ClearCommand
-  tree_house.worker.command.execute.class: TreeHouse\WorkerBundle\Command\ExecuteCommand
-  tree_house.worker.command.inspect.class: TreeHouse\WorkerBundle\Command\InspectCommand
-  tree_house.worker.command.kick.class: TreeHouse\WorkerBundle\Command\KickCommand
-  tree_house.worker.command.list.class: TreeHouse\WorkerBundle\Command\ListCommand
-  tree_house.worker.command.run.class: TreeHouse\WorkerBundle\Command\RunCommand
-  tree_house.worker.command.schedule.class: TreeHouse\WorkerBundle\Command\ScheduleCommand
-
 services:
   tree_house.worker.queue_manager:
-    class: %tree_house.worker.queue_manager.class%
+    class: TreeHouse\WorkerBundle\QueueManager
     arguments:
       - ~ # injected in extension
       - '@event_dispatcher'
@@ -19,49 +9,56 @@ services:
       - { name: monolog.logger, channel: worker }
 
   tree_house.worker.command.clear:
-    class: %tree_house.worker.command.clear.class%
+    class: TreeHouse\WorkerBundle\Command\ClearCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.execute:
-    class: %tree_house.worker.command.execute.class%
+    class: TreeHouse\WorkerBundle\Command\ExecuteCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.inspect:
-    class: %tree_house.worker.command.inspect.class%
+    class: TreeHouse\WorkerBundle\Command\InspectCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.kick:
-    class: %tree_house.worker.command.kick.class%
+    class: TreeHouse\WorkerBundle\Command\KickCommand
+    arguments:
+      - '@tree_house.worker.queue_manager'
+    tags:
+      - { name: console.command }
+
+  tree_house.worker.command.peek:
+    class: TreeHouse\WorkerBundle\Command\PeekCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.list:
-    class: %tree_house.worker.command.list.class%
+    class: TreeHouse\WorkerBundle\Command\ListCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.run:
-    class: %tree_house.worker.command.run.class%
+    class: TreeHouse\WorkerBundle\Command\RunCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     tags:
       - { name: console.command }
 
   tree_house.worker.command.schedule:
-    class: %tree_house.worker.command.schedule.class%
+    class: TreeHouse\WorkerBundle\Command\ScheduleCommand
     arguments:
       - '@tree_house.worker.queue_manager'
     calls:
