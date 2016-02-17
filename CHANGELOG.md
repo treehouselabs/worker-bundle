@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 1.1.0
+
+* Added `worker:peek` command
+
+
 ## 1.0.0
 
 BC breaks from the previous [WorkerBundle][worker-bundle]:

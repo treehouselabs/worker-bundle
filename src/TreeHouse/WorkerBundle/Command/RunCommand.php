@@ -2,6 +2,7 @@
 
 namespace TreeHouse\WorkerBundle\Command;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Monolog\Handler\ConsoleHandler;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -67,9 +68,8 @@ class RunCommand extends Command
         $minDuration = intval($input->getOption('min-duration'));
 
         $logger = $this->manager->getLogger();
-        if (($logger instanceof Monolog\Logger) && false === $this->hasConsoleHandler($logger)) {
-            $logger->pushHandler(new ConsoleHandler($output));
-        }
+
+        $this->attachConsoleHandler($logger, $output);
 
         // configure pheanstalk to watch the right tubes
         $this->watchActions($input->getOption('action'), $input->getOption('exclude'));
@@ -169,19 +169,22 @@ class RunCommand extends Command
     }
 
     /**
-     * @param Monolog\Logger $logger
-     *
-     * @return bool
+     * @param LoggerInterface $logger
+     * @param OutputInterface $output
      */
-    protected function hasConsoleHandler(Monolog\Logger $logger)
+    protected function attachConsoleHandler(LoggerInterface $logger, OutputInterface $output)
     {
+        if (!class_exists('Monolog\\Logger') || !$logger instanceof \Monolog\Logger) {
+            return;
+        }
+
         foreach ($logger->getHandlers() as $handler) {
             if ($handler instanceof ConsoleHandler) {
-                return true;
+                return;
             }
         }
 
-        return false;
+        $logger->pushHandler(new ConsoleHandler($output));
     }
 
     /**
