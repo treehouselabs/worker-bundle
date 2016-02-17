@@ -1,9 +1,25 @@
 CHANGELOG
 =========
 
+## 1.2.0
+
+* Added Symfony3 support
+* Added `worker:peek` command
+
+
+## 1.1.1
+
+* Added default ttr configuration
+
+
 ## 1.1.0
 
-* Added `worker:peek` command
+* Added event for buried jobs
+
+
+## 1.0.1
+
+* When using Monolog, logs are output to the console automatically
 
 
 ## 1.0.0
