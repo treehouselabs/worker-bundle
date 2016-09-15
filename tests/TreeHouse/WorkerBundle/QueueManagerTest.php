@@ -635,6 +635,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -688,6 +689,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -727,6 +729,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -757,6 +760,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -793,6 +797,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 2,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
