@@ -322,6 +322,22 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $this->manager->reschedule($job, $date);
     }
 
+    public function testRescheduleWithPriority()
+    {
+        $delay = 10;
+        $date  = new \DateTime(sprintf('+ %d seconds', $delay));
+        $job   = new Job(1234, 'data');
+        $priority = PheanstalkInterface::DEFAULT_PRIORITY - 1;
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('release')
+            ->with($job, $priority, $delay)
+        ;
+
+        $this->manager->reschedule($job, $date, $priority);
+    }
+
     /**
      * @expectedException        \InvalidArgumentException
      * @expectedExceptionMessage You cannot reschedule a job in the past
@@ -619,6 +635,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -672,6 +689,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -711,6 +729,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -741,6 +760,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk
@@ -777,6 +797,7 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $stats = [
             'tube'     => $action,
             'releases' => 2,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
         ];
 
         $this->pheanstalk

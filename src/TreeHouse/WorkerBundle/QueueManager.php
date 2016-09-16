@@ -308,10 +308,11 @@ class QueueManager
      *
      * @param Job       $job
      * @param \DateTime $date
+     * @param integer   $priority
      *
      * @throws \InvalidArgumentException When `$date` is in the past
      */
-    public function reschedule(Job $job, \DateTime $date)
+    public function reschedule(Job $job, \DateTime $date, $priority = PheanstalkInterface::DEFAULT_PRIORITY)
     {
         if ($date < new \DateTime()) {
             throw new \InvalidArgumentException(
@@ -319,7 +320,7 @@ class QueueManager
             );
         }
 
-        $this->pheanstalk->release($job, PheanstalkInterface::DEFAULT_PRIORITY, $date->getTimestamp() - time());
+        $this->pheanstalk->release($job, $priority, $date->getTimestamp() - time());
 
         $this->logJob($job->getId(), sprintf('Rescheduled job for %s', $date->format('Y-m-d H:i:s')));
     }
@@ -489,6 +490,7 @@ class QueueManager
         $stats    = $this->pheanstalk->statsJob($job);
         $payload  = (array) json_decode($job->getData(), true);
         $releases = intval($stats['releases']);
+        $priority = intval($stats['pri']);
 
         // context for logging
         $context = [
@@ -507,7 +509,7 @@ class QueueManager
             return $result;
         } catch (RescheduleException $re) {
             // reschedule the job
-            $this->reschedule($job, $re->getRescheduleDate());
+            $this->reschedule($job, $re->getRescheduleDate(), $priority);
         } catch (AbortException $e) {
             // abort thrown from executor, rethrow it and let the caller handle it
             throw $e;
@@ -525,7 +527,7 @@ class QueueManager
                 $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e, $releases));
             } else {
                 // try again, regardless of the error
-                $this->reschedule($job, new \DateTime('+10 minutes'));
+                $this->reschedule($job, new \DateTime('+10 minutes'), $priority);
             }
         }
 
