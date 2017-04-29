@@ -714,6 +714,44 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->manager->executeJob($job));
     }
 
+    public function testExecuteJobAndRescheduleWithNewPriority()
+    {
+        $action   = 'test';
+        $executor = $this->getMockForAbstractClass(ExecutorInterface::class);
+        $executor->expects($this->any())->method('getName')->will($this->returnValue($action));
+        $this->manager->addExecutor($executor);
+
+        $data  = [];
+        $job   = new Job(1234, json_encode($data));
+        $stats = [
+            'tube'     => $action,
+            'releases' => 0,
+            'pri'      => PheanstalkInterface::DEFAULT_PRIORITY,
+        ];
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('statsJob')
+            ->with($job)
+            ->will($this->returnValue($stats))
+        ;
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('release')
+            ->with($job, PheanstalkInterface::DEFAULT_PRIORITY - 1, 10)
+        ;
+
+        $executor
+            ->expects($this->once())
+            ->method('execute')
+            ->will($this->throwException(RescheduleException::create('10 seconds', null, PheanstalkInterface::DEFAULT_PRIORITY -1 )))
+        ;
+
+        $this->assertFalse($this->manager->executeJob($job));
+    }
+
+
     /**
      * @expectedException \TreeHouse\WorkerBundle\Exception\AbortException
      */

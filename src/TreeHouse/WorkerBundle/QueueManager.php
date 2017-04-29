@@ -508,6 +508,10 @@ class QueueManager
 
             return $result;
         } catch (RescheduleException $re) {
+            // Override priority if the RescheduleException provides a new one.
+            if (!is_null($re->getReshedulePriority())) {
+                $priority = $re->getReshedulePriority();
+            }
             // reschedule the job
             $this->reschedule($job, $re->getRescheduleDate(), $priority);
         } catch (AbortException $e) {
