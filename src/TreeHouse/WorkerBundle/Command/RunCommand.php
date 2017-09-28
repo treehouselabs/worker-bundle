@@ -49,6 +49,7 @@ class RunCommand extends Command
             ->addOption('max-time', 't', InputOption::VALUE_OPTIONAL, 'Maximum running time in seconds. Set to 0 for infinite', 0)
             ->addOption('batch-size', 'b', InputOption::VALUE_OPTIONAL, 'Number of jobs to process before completing a batch', 15)
             ->addOption('min-duration', 'd', InputOption::VALUE_OPTIONAL, 'Number of seconds to the worker process should minimal take to run', 15)
+            ->addOption('timeout', null, InputOption::VALUE_OPTIONAL, 'Maximum number of seconds to wait for a job. Below 0 for infinite', 60)
         ;
     }
 
@@ -66,6 +67,7 @@ class RunCommand extends Command
         $maxJobs     = intval($input->getOption('limit'));
         $batchSize   = intval($input->getOption('batch-size'));
         $minDuration = intval($input->getOption('min-duration'));
+        $timeout     = intval($input->getOption('timeout'));
 
         $logger = $this->manager->getLogger();
 
@@ -77,8 +79,6 @@ class RunCommand extends Command
         $start         = time();
         $jobsCompleted = 0;
 
-        // wait for job, timeout after 1 minute
-        $timeout = 60;
         $this->output(sprintf('Waiting at most <info>%d seconds</info> for a reserved job...', $timeout));
 
         $exit = 0;
