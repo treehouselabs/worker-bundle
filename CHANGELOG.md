@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 1.2.1
+
+* #9  Ensure that a job retains its priority when it is rescheduled
+* #10 Add ability to specify a new priority on rescheduled jobs
+* #11 Add ability to set timeout for reservations
+
+
 ## 1.2.0
 
 * Added Symfony3 support
