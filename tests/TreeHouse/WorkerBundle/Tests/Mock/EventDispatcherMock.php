@@ -5,6 +5,9 @@ namespace TreeHouse\WorkerBundle\Tests\Mock;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
+/**
+ * @deprecated Removed in next major version
+ */
 class EventDispatcherMock extends EventDispatcher
 {
     /**
