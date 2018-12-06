@@ -517,7 +517,7 @@ class QueueManager
         } catch (AbortException $e) {
             // abort thrown from executor, rethrow it and let the caller handle it
             throw $e;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // some other exception occured
             $message = sprintf('Exception occurred: %s in %s on line %d', $e->getMessage(), $e->getFile(), $e->getLine());
             $this->logJob($job->getId(), $message, LogLevel::ERROR, $context);
