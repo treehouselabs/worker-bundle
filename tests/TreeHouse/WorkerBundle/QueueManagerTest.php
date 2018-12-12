@@ -14,6 +14,7 @@ use TreeHouse\WorkerBundle\Exception\RescheduleException;
 use TreeHouse\WorkerBundle\Executor\ExecutorInterface;
 use TreeHouse\WorkerBundle\Executor\ObjectPayloadInterface;
 use TreeHouse\WorkerBundle\QueueManager;
+use TreeHouse\WorkerBundle\Tests\Executor\FatalErrorExecutor;
 use TreeHouse\WorkerBundle\Tests\Mock\EventDispatcherMock;
 use TreeHouse\WorkerBundle\WorkerEvents;
 
@@ -858,6 +859,29 @@ class QueueManagerTest extends \PHPUnit_Framework_TestCase
         ;
 
         $this->manager->executeJob($job);
+    }
+
+    public function testFatalErrorCatch()
+    {
+        $executor = new FatalErrorExecutor();
+        $this->manager->addExecutor($executor);
+
+        $data = [];
+        $job = new Job(1234, json_encode($data));
+        $stats = [
+            'tube' => 'fatal.error',
+            'releases' => 0,
+            'pri' => PheanstalkInterface::DEFAULT_PRIORITY,
+        ];
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('statsJob')
+            ->with($job)
+            ->will($this->returnValue($stats))
+        ;
+
+        $this->assertEquals(false, $this->manager->executeJob($job));
     }
 }
 
