@@ -15,6 +15,9 @@ env:
 
 matrix:
   fast_finish: true
+  exclude:
+    - php: 7.0
+      env: SYMFONY_VERSION=4.0.*
 
 cache:
   directories:
