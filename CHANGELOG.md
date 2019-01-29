@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 2.0.0
+
+### Changes
+
+* Added Symfony 4 support
+* #16 catch throwables instead of just exceptions
+
+### Breaking changes
+
+* Dropped support for PHP 5.5 and 5.6
+* Dropped support for unmaintained Symfony versions. Supported versions are 2.8, 3.4, 4.1 and up,
+  as per the [Symfony Roadmap](https://symfony.com/roadmap).
+
 ## 1.2.1
 
 * #9  Ensure that a job retains its priority when it is rescheduled
