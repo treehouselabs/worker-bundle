@@ -6,6 +6,7 @@ use Pheanstalk\Exception\ServerException;
 use Pheanstalk\Job;
 use Pheanstalk\PheanstalkInterface;
 use Pheanstalk\Response;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use TreeHouse\WorkerBundle\Event\ExecutionEvent;
 use TreeHouse\WorkerBundle\Event\JobEvent;
@@ -18,7 +19,7 @@ use TreeHouse\WorkerBundle\Tests\Executor\FatalErrorExecutor;
 use TreeHouse\WorkerBundle\Tests\Mock\EventDispatcherMock;
 use TreeHouse\WorkerBundle\WorkerEvents;
 
-class QueueManagerTest extends \PHPUnit_Framework_TestCase
+class QueueManagerTest extends TestCase
 {
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject|PheanstalkInterface

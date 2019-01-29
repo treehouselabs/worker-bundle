@@ -2,10 +2,11 @@
 
 namespace TreeHouse\WorkerBundle\Tests\Event;
 
+use PHPUnit\Framework\TestCase;
 use TreeHouse\WorkerBundle\Event\ExecutionEvent;
 use TreeHouse\WorkerBundle\Executor\ExecutorInterface;
 
-class ExecutionEventTest extends \PHPUnit_Framework_TestCase
+class ExecutionEventTest extends TestCase
 {
     public function testEvent()
     {

@@ -3,6 +3,7 @@
 namespace TreeHouse\WorkerBundle\Tests\DependencyInjection;
 
 use Pheanstalk\Pheanstalk;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -10,7 +11,7 @@ use Symfony\Component\HttpKernel\Tests\Logger;
 use TreeHouse\WorkerBundle\DependencyInjection\TreeHouseWorkerExtension;
 use TreeHouse\WorkerBundle\TreeHouseWorkerBundle;
 
-class TreeHouseWorkerExtensionTest extends \PHPUnit_Framework_TestCase
+class TreeHouseWorkerExtensionTest extends TestCase
 {
     /**
      * @var ContainerBuilder
@@ -58,7 +59,13 @@ class TreeHouseWorkerExtensionTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($this->container->hasDefinition('tree_house.worker.queue_manager'));
 
         $definition = $this->container->getDefinition('tree_house.worker.queue_manager');
-        $this->assertEquals($id, (string) $definition->getArgument(0));
+        $injected = $definition->getArgument(0);
+
+        if ($injected instanceof Definition) {
+            $this->assertEquals(Pheanstalk::class, $injected->getClass());
+        } else {
+            $this->assertEquals($id, (string) $injected);
+        }
     }
 
     public function testNewPheanstalkService()
