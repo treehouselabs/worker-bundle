@@ -3,9 +3,10 @@
 namespace TreeHouse\WorkerBundle\Tests\Event;
 
 use Pheanstalk\Job;
+use PHPUnit\Framework\TestCase;
 use TreeHouse\WorkerBundle\Event\JobEvent;
 
-class JobEventTest extends \PHPUnit_Framework_TestCase
+class JobEventTest extends TestCase
 {
     public function testEvent()
     {

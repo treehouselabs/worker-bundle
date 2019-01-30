@@ -19,7 +19,7 @@ For this process, we assume you have a Beanstalk server up and running.
 Install via [Composer][composer]:
 
 ```bash
-$ composer require treehouselabs/worker-bundle:~1.0
+$ composer require treehouselabs/worker-bundle
 ```
 
 [composer]: https://getcomposer.org

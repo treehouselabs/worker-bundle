@@ -1,5 +1,6 @@
 services:
   tree_house.worker.queue_manager:
+    public: true
     class: TreeHouse\WorkerBundle\QueueManager
     arguments:
       - ~ # injected in extension
