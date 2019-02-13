@@ -202,7 +202,7 @@ class QueueManager
      *
      * @return int The job id
      */
-    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null)
+    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null, $reScheduleTime = null)
     {
         if (false === $this->hasExecutor($action)) {
             throw new \InvalidArgumentException(sprintf(
@@ -221,6 +221,14 @@ class QueueManager
 
         if (null === $ttr) {
             $ttr = $this->defaultTtr;
+        }
+
+        if(isset($payload['__rescheduleTime'])){
+            throw new \InvalidArgumentException('__rescheduleTime is reserved in payload');
+        }
+        if (null === $reScheduleTime) {
+            $reScheduleTime =  PheanstalkInterface::DEFAULT_RESCHEDULE_TIME;
+            $payload['__rescheduleTime'] = $reScheduleTime;
         }
 
         if (!is_numeric($delay)) {
@@ -491,6 +499,11 @@ class QueueManager
         $payload  = (array) json_decode($job->getData(), true);
         $releases = intval($stats['releases']);
         $priority = intval($stats['pri']);
+        $rescheduleTime =  PheanstalkInterface::DEFAULT_RESCHEDULE_TIME;
+        if(isset($payload['__rescheduleTime'])){
+            $rescheduleTime = $payload['__rescheduleTime'] ;
+            unset($payload['__rescheduleTime']);
+        }
 
         // context for logging
         $context = [
@@ -531,7 +544,7 @@ class QueueManager
                 $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e, $releases));
             } else {
                 // try again, regardless of the error
-                $this->reschedule($job, new \DateTime('+10 minutes'), $priority);
+                $this->reschedule($job, new \DateTime($rescheduleTime), $priority);
             }
         }
 
