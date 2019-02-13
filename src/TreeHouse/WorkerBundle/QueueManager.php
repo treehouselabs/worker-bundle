@@ -196,13 +196,14 @@ class QueueManager
      *                             string relative from now, like "10 seconds".
      * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
      * @param int        $ttr      Time To Run: seconds a job can be reserved for
+     * @param string     $rescheduleAfter how much delay should the reschedule have on error
      *
      * @throws \InvalidArgumentException When the action is not defined
      * @throws \InvalidArgumentException When `$delay` or `$priority` is negative
      *
      * @return int The job id
      */
-    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null, $reScheduleTime = null)
+    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null, $rescheduleAfter = null)
     {
         if (false === $this->hasExecutor($action)) {
             throw new \InvalidArgumentException(sprintf(
@@ -226,9 +227,9 @@ class QueueManager
         if(isset($payload['__rescheduleTime'])){
             throw new \InvalidArgumentException('__rescheduleTime is reserved in payload');
         }
-        if (null === $reScheduleTime) {
-            $reScheduleTime =  PheanstalkInterface::DEFAULT_RESCHEDULE_TIME;
-            $payload['__rescheduleTime'] = $reScheduleTime;
+        if (null === $rescheduleAfter) {
+            $rescheduleAfter =  '10min';
+            $payload['__rescheduleTime'] = $rescheduleAfter;
         }
 
         if (!is_numeric($delay)) {
