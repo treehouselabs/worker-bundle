@@ -148,7 +148,7 @@ class QueueManagerTest extends TestCase
 
         $payload = ['data'];
         $expectedPayload = $payload;
-        $expectedPayload['__rescheduleTime'] = PheanstalkInterface::DEFAULT_RESCHEDULE_TIME;
+        $expectedPayload['__rescheduleTime'] = '10min';
 
         $this->pheanstalk
             ->expects($this->once())
@@ -174,7 +174,7 @@ class QueueManagerTest extends TestCase
         $ttr      = 1200;
         $rescheduleTime = '60min';
         $expectedPayload = $payload;
-        $expectedPayload['__rescheduleTime'] = '60min';
+        $expectedPayload['__rescheduleTime'] = '10min';
 
         $this->pheanstalk
             ->expects($this->once())
