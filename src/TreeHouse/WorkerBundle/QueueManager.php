@@ -500,11 +500,8 @@ class QueueManager
         $payload  = (array) json_decode($job->getData(), true);
         $releases = intval($stats['releases']);
         $priority = intval($stats['pri']);
-        $rescheduleTime =  PheanstalkInterface::DEFAULT_RESCHEDULE_TIME;
-        if(isset($payload['__rescheduleTime'])){
-            $rescheduleTime = $payload['__rescheduleTime'] ;
-            unset($payload['__rescheduleTime']);
-        }
+        $rescheduleTime = $payload['__rescheduleTime'];
+        unset($payload['__rescheduleTime']);
 
         // context for logging
         $context = [
