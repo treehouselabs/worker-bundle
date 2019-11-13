@@ -22,7 +22,7 @@ class JobBuriedEvent extends Event
     /**
      * Exception that caused the job to be buried
      *
-     * @var \Exception
+     * @var \Throwable
      */
     protected $exception;
 
@@ -30,10 +30,10 @@ class JobBuriedEvent extends Event
      * JobBuriedEvent constructor.
      *
      * @param Job $job
-     * @param \Exception $exception
+     * @param \Throwable $exception
      * @param int $attempts
      */
-    public function __construct(Job $job, \Exception $exception, $attempts)
+    public function __construct(Job $job, \Throwable $exception, $attempts)
     {
         $this->job = $job;
         $this->exception = $exception;
@@ -49,7 +49,7 @@ class JobBuriedEvent extends Event
     }
 
     /**
-     * @return \Exception
+     * @return \Throwable
      */
     public function getException()
     {

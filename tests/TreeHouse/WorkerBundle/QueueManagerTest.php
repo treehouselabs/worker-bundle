@@ -9,6 +9,7 @@ use Pheanstalk\Response;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use TreeHouse\WorkerBundle\Event\ExecutionEvent;
+use TreeHouse\WorkerBundle\Event\JobBuriedEvent;
 use TreeHouse\WorkerBundle\Event\JobEvent;
 use TreeHouse\WorkerBundle\Exception\AbortException;
 use TreeHouse\WorkerBundle\Exception\RescheduleException;
@@ -883,6 +884,40 @@ class QueueManagerTest extends TestCase
         ;
 
         $this->assertEquals(false, $this->manager->executeJob($job));
+    }
+
+    public function testFatalErrorCatchWithNoRetries()
+    {
+        $executor = new FatalErrorExecutor();
+        $this->manager->addExecutor($executor);
+
+        $data = [];
+        $job = new Job(1234, json_encode($data));
+        $stats = [
+            'tube' => 'fatal.error',
+            'releases' => 2,
+            'pri' => PheanstalkInterface::DEFAULT_PRIORITY,
+        ];
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('statsJob')
+            ->with($job)
+            ->will($this->returnValue($stats))
+        ;
+
+        $this->pheanstalk
+            ->expects($this->once())
+            ->method('bury')
+            ->with($job)
+        ;
+
+        $this->assertEquals(false, $this->manager->executeJob($job));
+
+        $events = $this->dispatcher->getDispatchedEvents();
+        static::assertArrayHasKey(WorkerEvents::JOB_BURIED_EVENT, $events);
+        static::assertCount(1, $events[WorkerEvents::JOB_BURIED_EVENT]);
+        static::assertInstanceOf(JobBuriedEvent::class, $events[WorkerEvents::JOB_BURIED_EVENT][0]);
     }
 }
 
