@@ -1,3 +1,17 @@
+Deprecated & archived
+=====================
+
+This bundle is no longer maintained. It will still work with Symfony versions `^2.8|^3.0|^4.0` and is archived here to not break existing applications using it. However it will not get maintenance updates or even security fixes.
+
+If you need queue/worker functionality in your project, there are far better solutions right now to look at:
+
+* https://github.com/symfony/messenger/
+* https://github.com/php-enqueue/enqueue-dev
+
+Previous readme below 👇
+
+---
+
 Worker bundle
 =============
 
