@@ -148,16 +148,20 @@ class QueueManagerTest extends TestCase
         $this->manager->addExecutor($executor);
 
         $payload = ['data'];
+        $expectedPayload = $payload;
+        $expectedPayload['__rescheduleTime'] = '10min';
 
         $this->pheanstalk
             ->expects($this->once())
             ->method('putInTube')
-            ->with($action, json_encode($payload), PheanstalkInterface::DEFAULT_PRIORITY, PheanstalkInterface::DEFAULT_DELAY, PheanstalkInterface::DEFAULT_TTR)
+            ->with($action, json_encode($expectedPayload), PheanstalkInterface::DEFAULT_PRIORITY, PheanstalkInterface::DEFAULT_DELAY, PheanstalkInterface::DEFAULT_TTR)
             ->will($this->returnValue(1234))
         ;
 
         $this->assertEquals(1234, $this->manager->add($action, $payload));
     }
+
+
 
     public function testAddWithArguments()
     {
@@ -169,15 +173,18 @@ class QueueManagerTest extends TestCase
         $priority = 10;
         $delay    = 10;
         $ttr      = 1200;
+        $rescheduleTime = '60min';
+        $expectedPayload = $payload;
+        $expectedPayload['__rescheduleTime'] = '10min';
 
         $this->pheanstalk
             ->expects($this->once())
             ->method('putInTube')
-            ->with($action, json_encode($payload), $priority, $delay, $ttr)
+            ->with($action, json_encode($expectedPayload), $priority, $delay, $ttr)
             ->will($this->returnValue(1234))
         ;
 
-        $this->assertEquals(1234, $this->manager->add($action, $payload, $delay, $priority, $ttr));
+        $this->assertEquals(1234, $this->manager->add($action, $payload, $delay, $priority, $ttr,$rescheduleTime));
     }
 
     /**

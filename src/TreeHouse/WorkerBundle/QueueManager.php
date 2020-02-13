@@ -196,13 +196,14 @@ class QueueManager
      *                             string relative from now, like "10 seconds".
      * @param int        $priority From 0 (most urgent) to 0xFFFFFFFF (least urgent)
      * @param int        $ttr      Time To Run: seconds a job can be reserved for
+     * @param string     $rescheduleAfter how much delay should the reschedule have on error
      *
      * @throws \InvalidArgumentException When the action is not defined
      * @throws \InvalidArgumentException When `$delay` or `$priority` is negative
      *
      * @return int The job id
      */
-    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null)
+    public function add($action, array $payload, $delay = null, $priority = null, $ttr = null, $rescheduleAfter = null)
     {
         if (false === $this->hasExecutor($action)) {
             throw new \InvalidArgumentException(sprintf(
@@ -221,6 +222,14 @@ class QueueManager
 
         if (null === $ttr) {
             $ttr = $this->defaultTtr;
+        }
+
+        if(isset($payload['__rescheduleTime'])){
+            throw new \InvalidArgumentException('__rescheduleTime is reserved in payload');
+        }
+        if (null === $rescheduleAfter) {
+            $rescheduleAfter =  '10min';
+            $payload['__rescheduleTime'] = $rescheduleAfter;
         }
 
         if (!is_numeric($delay)) {
@@ -491,6 +500,8 @@ class QueueManager
         $payload  = (array) json_decode($job->getData(), true);
         $releases = intval($stats['releases']);
         $priority = intval($stats['pri']);
+        $rescheduleTime = $payload['__rescheduleTime'];
+        unset($payload['__rescheduleTime']);
 
         // context for logging
         $context = [
@@ -531,7 +542,7 @@ class QueueManager
                 $this->dispatcher->dispatch(WorkerEvents::JOB_BURIED_EVENT, new JobBuriedEvent($job, $e, $releases));
             } else {
                 // try again, regardless of the error
-                $this->reschedule($job, new \DateTime('+10 minutes'), $priority);
+                $this->reschedule($job, new \DateTime($rescheduleTime), $priority);
             }
         }
 
