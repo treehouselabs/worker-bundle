@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use TreeHouse\WorkerBundle\QueueManager;
 
 class ListCommand extends Command
@@ -126,7 +127,7 @@ class ListCommand extends Command
             $output->write(sprintf("\033[%dA", $this->lineCount));
 
             // overwrite the complete table before rendering the new one
-            $width = $this->getApplication()->getTerminalDimensions()[0];
+            $width = (new Terminal())->getWidth();
             $lines = array_fill(0, $this->lineCount, str_pad('', $width, ' '));
             $output->writeln($lines);
 
